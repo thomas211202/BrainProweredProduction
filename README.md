@@ -10,3 +10,4 @@ docker build . -t <name>
 
 * run container
 docker run -v /path/on/host:/data <image_name>
+  (likely: docker run -v /:/data <name> )
