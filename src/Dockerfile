@@ -12,15 +12,9 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY ./app /src/app
 
-# Make port 80 available to the world outside this container
-#EXPOSE 80
 # Create a volume mount point
-VOLUME /data_check_123
-
-# Define environment variable
-#ENV NAME World
+VOLUME /data
 
 # Run app.py when the container launches
 CMD ["python", "app/main.py"]
 
-#CMD ["gio", "open", "confusion_matrix.png"]
