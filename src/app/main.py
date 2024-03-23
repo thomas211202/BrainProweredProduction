@@ -6,6 +6,8 @@ import xmltodict
 import xmljson
 import json
 import random
+import pickle
+
 from xml.dom import minidom
 import numpy as np
 from numpy import multiply
@@ -16,7 +18,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.svm import SVC
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
 from sklearn.neighbors import KNeighborsClassifier
-from sklearn.metrics import accuracy_score
+from sklearn.metrics import accuracy_score, confusion_matrix, ConfusionMatrixDisplay
 from bs4 import BeautifulSoup
 from braindecode.models import ShallowFBCSPNet, EEGNetv4, Deep4Net, HybridNet
 from braindecode.models.util import models_dict
@@ -43,11 +45,9 @@ from classes.transformData import (
     Data,
 )
 
+# matplotlib.use('TkAgg')
 
-import pandas as pd
-
-
-SAMPLING_FREQUENCY = 512
+SAMPLING_FREQUENCY = 500
 LENGTH_SAMPLE = 5
 data_directory_mat = './app/BP_EEG_data/mat/'
 data_directory_xml = './app/BP_EEG_data/xml/'
@@ -92,15 +92,20 @@ X = epochs.get_data()
 y = epochs.events[:, 2] - 1
 
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
-# display(X_train.shape, X_test.shape, y_train.shape, y_test.shape)
+print(X_train.shape, X_test.shape, y_train.shape, y_test.shape)
 
 models_available = list(models_dict.keys())
 print(*models_available, sep='\n')
 
 cuda = torch.cuda.is_available()  # check if GPU is available
-device = 'cuda' if cuda else 'cpu'
-if cuda:
-    torch.backends.cudnn.benchmark = True
+mps = torch.backends.mps.is_available()
+if mps:
+    mps_device = torch.device("mps")
+else:
+    print ("MPS device not found.")
+    device = 'cuda' if cuda else 'cpu'
+    if cuda:
+        torch.backends.cudnn.benchmark = True
 
 seed = 20200220  # random seed to make results reproducible
 set_random_seeds(seed=seed, cuda=cuda)
@@ -126,6 +131,9 @@ print(model)
 if cuda:
     model.cuda()
     print("Model on GPU")
+elif mps:
+    model.to(mps_device)
+    print("Model on mps")
 
 
 lr = 0.0625 * 0.01
@@ -152,30 +160,45 @@ clf = EEGClassifier(
 
 clf.fit(X_train, y_train)
 
+# Path to save the model file within the container
+model_file_path = '/data/model.pkl'
+
+# Ensure the directory structure exists
+os.makedirs(os.path.dirname(model_file_path), exist_ok=True)
+
+with open(model_file_path,'wb') as f:
+    pickle.dump(clf,f)
 
 y_pred = clf.predict(X_test)
 accuracy = accuracy_score(y_test, y_pred)
 print(f"Accuracy: {accuracy * 100:.2f}%")
+disp = ConfusionMatrixDisplay(confusion_matrix(y_test, y_pred))
+disp.plot()
+# plt.show()
+plt.savefig('/data/confusion_matrix.png')
 
-# randx = np.random.rand(1, 19, 2501)
-# print(randx)
-# clf.predict(randx)
-print(X_test)
-print(X_test.shape)
-print(y_test)
-print(y_test.shape)
 
-test = np.concatenate((X_test, np.repeat(y_test[:, np.newaxis], X_test.shape[1], axis=1)[:, :, np.newaxis]  # Shape: (72, 19, 1)
-), axis=2)
 
-sample = test[np.random.choice(test.shape[0], 1, replace=False)]
-print(sample)
-print(sample.shape)
-X = sample[:, :-1, :25]
-y = sample[:, -1, :25]
-# clf.predict(X)
-print("test actual: ", y)
-# randx = np.random.rand(1, 19, 2501)
-# print(randx)
-# clf.predict(randx)
+# y_pred_1 = clf.predict(X_test[0])
+# accuracy = accuracy_score(y_test[0], y_pred)
+# print(f"Accuracy: {accuracy * 100:.2f}%")
+# disp = ConfusionMatrixDisplay(confusion_matrix(y_test[0], y_pred_1))
+# disp.plot()
+# plt.show()
+# plt.savefig('confusion_matrix_single.png')
+
+# print(X_test)
+# print(X_test.shape)
+# print(y_test)
+# print(y_test.shape)
+
+
+# sample = test[np.random.choice(test.shape[0], 1, replace=False)]
+# print(sample)
+# print(sample.shape)
+# X = sample[:, :-1, :25]
+# y = sample[:, -1, :25]
+# # clf.predict(X)
+# print("test actual: ", y)
+
 

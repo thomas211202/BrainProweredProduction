@@ -14,6 +14,8 @@ COPY ./app /src/app
 
 # Make port 80 available to the world outside this container
 #EXPOSE 80
+# Create a volume mount point
+VOLUME /data
 
 # Define environment variable
 ENV NAME World
@@ -21,3 +23,4 @@ ENV NAME World
 # Run app.py when the container launches
 CMD ["python", "app/main.py"]
 
+#CMD ["gio", "open", "confusion_matrix.png"]
