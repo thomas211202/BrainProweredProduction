@@ -99,13 +99,11 @@ print(*models_available, sep='\n')
 
 cuda = torch.cuda.is_available()  # check if GPU is available
 mps = torch.backends.mps.is_available()
-if mps:
-    mps_device = torch.device("mps")
-else:
-    print ("MPS device not found.")
-    device = 'cuda' if cuda else 'cpu'
-    if cuda:
-        torch.backends.cudnn.benchmark = True
+
+
+device = 'cuda' if cuda else 'cpu'
+if cuda:
+    torch.backends.cudnn.benchmark = True
 
 seed = 20200220  # random seed to make results reproducible
 set_random_seeds(seed=seed, cuda=cuda)
