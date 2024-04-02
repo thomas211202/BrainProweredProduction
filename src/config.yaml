@@ -1,0 +1,13 @@
+model_file_path : '/data/model.pkl'
+image_file_path : '/data/confusion_matrix.png'
+data_directory_mat : './app/BP_EEG_data/mat/'
+data_directory_xml : './app/BP_EEG_data/xml/'
+sampling_frequency : 500
+length_sample : 5
+f_notch : 50
+q : 30
+learning_rate : 0.0000625
+# learning rate * 0.1
+weight_decay : 0.008
+batch_size : 64
+n_epochs : 25
