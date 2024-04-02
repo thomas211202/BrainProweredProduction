@@ -11,7 +11,7 @@ class Data():
     def __init__(self,
                  data_directory_matlab='./app/BP_EEG_data/mat/',
                  data_directory_xml='./app/BP_EEG_data/xml/',
-                 sampling_frequency=512,
+                 sampling_frequency=500,
                  sample_length=5,
                  f_notch=50,
                  q=50
