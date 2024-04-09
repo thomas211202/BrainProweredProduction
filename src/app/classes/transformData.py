@@ -74,14 +74,32 @@ class Data():
         """
         df = self.get_df_without_marker(file_xml, file_mat)
         df_filter = pd.DataFrame(signal.sosfilt(self.sos, df))
-        df_filter.set_axis(df.columns.values, axis=1, inplace=True)
+        df_filter.set_axis(df.columns.values, axis=1)
         df_encoded = self.get_df_with_onehot_encoded_marker(file_xml, file_mat)
         marker_column_names = list(set(df_encoded.columns.values) - set(df.columns.values))
         df_filter[marker_column_names] = df_encoded[marker_column_names]
         return df_filter
 
+    def get_raw_stim_channel(self, file_xml, file_mat):
+        """
+        Returns a pandas DataFrame, containing the filtered EEG data and the markers as a stim channel
+        """
+        df = self.get_df_with_marker(file_xml, file_mat)
+        df_filter = pd.DataFrame(signal.sosfilt(self.sos, df))
+        df_filter.set_axis(df.columns.values, axis=1)
+        print(df_filter.columns)
+        # df_filter['marker'].rename('MNE_STIM_CHANNEL')
+        df_filter.rename(columns={"marker": "MNE_STIM_CHANNEL"})
+        print(df_filter)
+        ch_names = list(df_filter.columns.astype('str').values)
+        ch_types = ['eeg' for _ in range(len(ch_names)-1)] + ['stim']
+        print("ch_types: ", ch_types)
+        info = mne.create_info(ch_names=ch_names, sfreq=self.SAMPLING_FREQUENCY, ch_types=ch_types)
+        return mne.io.RawArray(df_filter.to_numpy().T, info)
+
     def get_mne_raw(self, file_xml, file_mat):
-        data = self.get_df_without_marker(file_xml, file_mat)
+        # data_without_markers = self.get_df_without_marker(file_xml, file_mat)
+        data = self.get_df_with_marker(file_xml, file_mat)
         ch_names = list(data.columns.values)
         ch_types = ['eeg' for _ in range(len(ch_names))]
         info = mne.create_info(ch_names=ch_names, sfreq=self.SAMPLING_FREQUENCY, ch_types=ch_types)
@@ -116,7 +134,9 @@ class Data():
         return np.vstack((marker_starts, markers)).T
 
     def get_events_matrix(self, file_xml, file_mat):
-        return np.insert(self.find_marker_starts(file_xml, file_mat), 1, 0, axis=1)
+        # return np.insert(self.find_marker_starts(file_xml, file_mat), 1, 0, axis=1)
+        print("events matrix: ", mne.find_events(self.get_raw_stim_channel(file_xml, file_mat)))
+        return mne.find_events(self.get_raw_stim_channel(file_xml, file_mat), stim_channel="MNE_STIM_CHANNEL")
 
     def get_epochs(self, file_xml, file_mat):
         return mne.Epochs(self.get_mne_raw(file_xml, file_mat), events=self.get_events_matrix(file_xml, file_mat), event_id=None, tmin=0, tmax=5, baseline=None, preload=True)
