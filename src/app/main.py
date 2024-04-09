@@ -85,7 +85,8 @@ plt.show()
 
 marker_starts = data.find_marker_starts(xml, mat)
 events = np.insert(marker_starts, 1, 0, axis=1)
-epochs = mne.Epochs(raw, events=events, event_id=None, tmin=0, tmax=5, baseline=None, preload=True)
+# epochs = mne.Epochs(raw, events=events, event_id=None, tmin=0, tmax=5, baseline=None, preload=True)
+epochs = data.get_epochs(xml, mat)
 # print(epochs)
 
 X = epochs.get_data()
@@ -93,6 +94,15 @@ y = epochs.events[:, 2] - 1
 
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 print(X_train.shape, X_test.shape, y_train.shape, y_test.shape)
+print("report: ")
+print("shape: ", X_test.shape)
+df = epochs.to_data_frame()
+print(df.describe())
+print(df.columns)
+print(df['condition'].unique())
+print(df)
+# epochs.plot_projs_topomap(vlim="joint")
+# plt.savefig('/data/initial_plot.png')
 
 models_available = list(models_dict.keys())
 print(*models_available, sep='\n')
